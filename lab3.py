@@ -46,6 +46,7 @@ class subscriber(object):
         self.hostname = host
         self.hostport = port
         print("HOST: {}".format(self.hostname))
+        self.coinbase = bellman_ford.Graph()
 
     def sendMsg(self):
         """
@@ -88,11 +89,17 @@ class subscriber(object):
                         print("TimeStamp: {}".format(timestamp))
 
                         currency = fxp.getCurrency(data[8:14])
+
+                        node = currency[0:3]
+                        neighbor = currency[3:6]
+
                         print("Currency: {}".format(currency))
 
                         try:
                             exchRate = fxp.getExchangeRate(data[14:22])
-                            print("Exchange Rate: {}".format(exchRate))
+                            print("Exchange Rate from {} to {} is: {}".
+                                  format(node, neighbor, exchRate))
+
                         except Exception as e:
                             print(e)
                             print(len(data[14:22]))
@@ -100,10 +107,17 @@ class subscriber(object):
                         reserved = fxp.getReserved(data[22:32])
                         print("reserved: {}".format(reserved))
 
+                        self.add_nodes_toGraph(node, neighbor, exchRate)
+
                     print("BREAKER----------------------------")
                 except Exception as e:
                     print(e)
+                    # connection was lost re-establish connection
                     self.sendMsg()
+
+    def add_nodes_toGraph(self, node, neighbor, exchangeRate):
+        self.coinbase.add_node(node)
+        self.coinbase.add_edge(node, neighbor, exchangeRate)
 
     @staticmethod
     def split(a, n):

@@ -22,9 +22,10 @@ class Graph(object):
         del self.graph[node]
         # remove reference to node from all vertices
 
+    def toStr(self):
+        print(self.graph)
 
-
-    def bellman_ford(self, ):
+    def bellman_ford(self):
         pass
     """
     def add_edge(self, a, b, c):
