@@ -47,6 +47,7 @@ class subscriber(object):
         self.hostport = port
         print("HOST: {}".format(self.hostname))
         self.coinbase = bellman_ford.Graph()
+        self.currentTime = None
 
     def sendMsg(self):
         """
@@ -88,26 +89,34 @@ class subscriber(object):
                         timestamp = fxp.getMs(data[0:8])
                         print("TimeStamp: {}".format(timestamp))
 
-                        currency = fxp.getCurrency(data[8:14])
+                        if timestamp > self.currentTime:
 
-                        node = currency[0:3]
-                        neighbor = currency[3:6]
+                            self.currentTime = timestamp
 
-                        print("Currency: {}".format(currency))
+                            # get currency pair
+                            currency = fxp.getCurrency(data[8:14])
 
-                        try:
-                            exchRate = fxp.getExchangeRate(data[14:22])
-                            print("Exchange Rate from {} to {} is: {}".
-                                  format(node, neighbor, exchRate))
+                            node = currency[0:3]
+                            neighbor = currency[3:6]
 
-                        except Exception as e:
-                            print(e)
-                            print(len(data[14:22]))
-                        # struct.error: unpack requires a buffer of 8 bytes
-                        reserved = fxp.getReserved(data[22:32])
-                        print("reserved: {}".format(reserved))
+                            print("Currency: {}".format(currency))
 
-                        self.add_nodes_toGraph(node, neighbor, exchRate)
+                            try:
+                                exchRate = fxp.getExchangeRate(data[14:22])
+                                print("Exchange Rate from {} to {} is: {}".
+                                      format(node, neighbor, exchRate))
+
+                            except Exception as e:
+                                print(e)
+                                print(len(data[14:22]))
+                            # struct.error: unpack requires a buffer of 8 bytes
+                            reserved = fxp.getReserved(data[22:32])
+                            print("reserved: {}".format(reserved))
+
+                            self.add_nodes_toGraph(node, neighbor, exchRate)
+                            self.coinbase.toStr()
+                        else:
+                            print("STALE QUOTE!")
 
                     print("BREAKER----------------------------")
                 except Exception as e:
