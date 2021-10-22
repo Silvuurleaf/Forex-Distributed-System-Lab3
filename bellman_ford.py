@@ -1,14 +1,32 @@
-
-
 class Graph(object):
 
-    def __init__(self, vertices):
+    def __init__(self):
+        self.vertices = set()
+        self.graph = {}
 
-        self.M = vertices  # Total number of vertices in the graph
-        self.graph = []  # Array of edges
+    def vert_in_graph(self, node):
+        return node in self.vertices
 
-    # Add edges
+    def add_node(self, node):
+        if not self.vert_in_graph(node):
+            self.vertices.add(node)
+            self.graph[node] = {}
+        else:
+            pass
 
+    def add_edge(self, node, neighbor, weight):
+        self.graph[node][neighbor] = weight
+        self.graph[neighbor][node] = 1/weight
+
+    def remove_node(self, node):
+        del self.graph[node]
+        # remove reference to node from all vertices
+
+
+
+    def bellman_ford(self, ):
+        pass
+    """
     def add_edge(self, a, b, c):
 
         self.graph.append([a, b, c])
@@ -39,3 +57,4 @@ class Graph(object):
                 return
 
         self.print_solution(distance)
+    """
