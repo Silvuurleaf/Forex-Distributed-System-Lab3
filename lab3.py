@@ -5,7 +5,7 @@ import datetime
 import pickle
 import ipaddress
 import struct
-import numpy as np
+import math
 
 import fxp_bytes_subscriber as fxp
 
@@ -47,7 +47,7 @@ class subscriber(object):
         self.hostport = port
         print("HOST: {}".format(self.hostname))
         self.coinbase = bellman_ford.Graph()
-        self.currentTime = None
+        self.currentTime = 0
 
     def sendMsg(self):
         """
@@ -57,8 +57,10 @@ class subscriber(object):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.connect(('localhost', 55555))
             IP4address = int(ipaddress.ip_address(self.hostname))
+
             byte_address = IP4address.to_bytes(4, "big")
             byte_port = self.hostport.to_bytes(2, "big")
+
             print("byte_address {}".format(byte_address))
             print("byte port {}".format(byte_port))
             byte_sub_msg = byte_address + byte_port
@@ -89,7 +91,7 @@ class subscriber(object):
                         timestamp = fxp.getMs(data[0:8])
                         print("TimeStamp: {}".format(timestamp))
 
-                        if timestamp > self.currentTime:
+                        if timestamp >= self.currentTime:
 
                             self.currentTime = timestamp
 
@@ -113,16 +115,21 @@ class subscriber(object):
                             reserved = fxp.getReserved(data[22:32])
                             print("reserved: {}".format(reserved))
 
-                            self.add_nodes_toGraph(node, neighbor, exchRate)
-                            self.coinbase.toStr()
+                            edgeWeight = -math.log10(exchRate)
+                            self.add_nodes_toGraph(node, neighbor, edgeWeight)
+
                         else:
                             print("STALE QUOTE!")
 
-                    print("BREAKER----------------------------")
+                    print("-----------------NEW QUOTE PACKET----------------")
                 except Exception as e:
                     print(e)
                     # connection was lost re-establish connection
                     self.sendMsg()
+                currency = self.coinbase.vertices[0]
+                distances = self.coinbase.bellman_ford(currency)
+                print("Start node {}".format(currency))
+                print("Distances: {}".format(distances))
 
     def add_nodes_toGraph(self, node, neighbor, exchangeRate):
         self.coinbase.add_node(node)
@@ -138,22 +145,10 @@ class subscriber(object):
         print("running")
         sub.sendMsg()
         sub.socketCreate()
-        print("send join req")
+        print("Sending a publisher join request...")
 
 
 if __name__ == '__main__':
     sub = subscriber('127.0.0.1', 54444)
     sub.run()
 
-    """
-    args = sys.argv[1:]
-    
-    if len(args) >= 2:
-
-        host_address = ""
-        sub = subscriber(host_address)
-        sub.run()
-    else:
-        print("Did not receive a proper input")
-        exit(1)
-    """
