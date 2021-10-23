@@ -115,7 +115,9 @@ class subscriber(object):
                             reserved = fxp.getReserved(data[22:32])
                             print("reserved: {}".format(reserved))
 
-                            edgeWeight = -math.log10(exchRate)
+                            edgeWeight = exchRate
+                            print("EXCHANGE RATE {}".format(exchRate))
+
                             self.add_nodes_toGraph(node, neighbor, edgeWeight)
 
                         else:
@@ -127,9 +129,29 @@ class subscriber(object):
                     # connection was lost re-establish connection
                     self.sendMsg()
                 currency = self.coinbase.vertices[0]
-                distances = self.coinbase.bellman_ford(currency)
-                print("Start node {}".format(currency))
-                print("Distances: {}".format(distances))
+                arbitragePath = self.coinbase.bellman_ford(currency)
+
+                if arbitragePath:
+                    print("Start node {}".format(currency))
+                    print("Distances: {}".format(arbitragePath))
+                    self.proccessPath(arbitragePath)
+
+    def proccessPath(self, path):
+
+        print("ARBITRAGE PATH {}".format(path))
+        print("Starting with 100 {}".format( next(iter(path)) ))
+        accumulated = 100
+
+
+
+        """
+        for token, exchangeRate in path.items():
+            rate = exchangeRate
+            totalPast = accumulated
+            accumulated = accumulated*rate
+            print("With {} of {} X {} = {}".format(totalPast, token, rate, accumulated))
+        """
+
 
     def add_nodes_toGraph(self, node, neighbor, exchangeRate):
         self.coinbase.add_node(node)

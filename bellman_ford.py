@@ -1,3 +1,8 @@
+import math
+TOLERANCE = 0.0001
+
+
+
 class Graph(object):
 
     def __init__(self):
@@ -15,134 +20,134 @@ class Graph(object):
             pass
 
     def add_edge(self, node, neighbor, weight):
-        self.graph[node][neighbor] = weight
+        self.graph[node][neighbor] = -math.log10(weight)
+
         self.add_node(neighbor)
-        self.graph[neighbor][node] = 1 / weight
 
-        #self.edges.append(Edge(node, neighbor, weight))
-        #self.edges.append(Edge(neighbor, node, 1 / weight))
+        print("INVERSE: {}".format(-math.log10(1 / weight)))
+        self.graph[neighbor][node] = -math.log10(1 / weight)
 
+        # self.edges.append(Edge(node, neighbor, weight))
+        # self.edges.append(Edge(neighbor, node, 1 / weight))
 
     def remove_node(self, node):
         del self.graph[node]
         # remove reference to node from all vertices
 
     def destination_predecessors(self, start_node):
-        destination = {}
-        predecessors = {}
+        destination = {}  # stores distances from start node
+        path = {}  # store path for an arbitrage
 
-        #for node, _ in self.graph.items():
+        # add currency nodes to destination/predecessor dictionaries
         for node in self.vertices:
             destination[node] = float('inf')
-            predecessors[node] = None
+            path[node] = None
+
+        # print("Destination Dictionary: {}".format(destination))
 
         # know distance from self is zero
-        print("Destination Dictionary: {}".format(destination))
-        print("WTF IS START NODE: {}".format(start_node))
         destination[start_node] = 0
 
-        return destination, predecessors
+        return destination, path
 
     def bellman_ford(self, startNode):
+
+        # can't run arbitrage if there is only one node in graph
         if len(self.vertices) > 1:
 
-            destination, pred = self.destination_predecessors(startNode)
+            # get destination & path dictionaries
+            destination, path = self.destination_predecessors(startNode)
             number_Vertices = len(self.vertices)
 
-            for i in range(number_Vertices-1):
+            # iterate V - 1 times for bellman ford
+            for i in range(number_Vertices - 1):
+                # for each currency (token) in graph
                 for token in self.vertices:
+                    # for given token, check each of its neighbors and its edge
                     for neighbor_token, edge in self.graph[token].items():
-                        print("Neighbors to token {}: {}".format(token, self.graph[token]))
-                        self.relaxEdge(token, neighbor_token, edge, destination, pred)
+                        # print("Neighbors to token {}: {}".format(token, self.graph[token]))
 
+                        # relax (update) edge values
+                        self.relaxEdge(token, neighbor_token, edge, destination,
+                                       path)
 
-            print("Destinations: {}".format(destination))
+            # print("Destinations: {}".format(destination))
+
+            # Second iteration checks if any of the edge values have been updated.
 
             for token in self.vertices:
                 for neighbor_token, edge in self.graph[token].items():
                     if destination[neighbor_token] < destination[token] + edge:
-                        return self.getNegativeCycle(pred, startNode)
+                        return self.getNegativeCycle(path, startNode)
         else:
             return None
 
     def relaxEdge(self, token, neighbor, edge, destination, predecessors):
         # If the distance between the node and the neighbour is lower than the one I have now
 
-        print("START NODE: {}".format(token))
-        print("RELAX EDGE: {}".format(destination))
-        print("NEIGHBOR: {}".format(neighbor))
+        # print("START NODE: {}".format(token))
+        # print("RELAX EDGE: {}".format(destination))
+        # print("NEIGHBOR: {}".format(neighbor))
 
-        if destination[neighbor] > destination[token] + edge:
+        if destination[neighbor] > destination[token] + edge + TOLERANCE:
+
+            #& destination[neighbor] > destination[token] + edge - TOLERANCE:
+
             # Record this lower distance
             destination[neighbor] = destination[token] + edge
-            predecessors[neighbor] = token
-    def getNegativeCycle(self, predecessors, startNode):
-        arbitrageLoop = [startNode]
-        print("THE MFKING PREDECESORS {}".format(predecessors))
 
-        return None
-        """
-                while True:
-            next_node = predecessors[startNode]
-            if next_node not in arbitrageLoop:
+            predecessors[neighbor] = token
+            predecessors[token] = neighbor
+
+    def getNegativeCycle(self, path, startNode):
+
+        arbit_path = {startNode: 0}
+
+        arbit_loop = []
+        next_node = startNode
+
+        while True:
+            prev_node = next_node           # parent node
+            next_node = path[next_node]     # successor node
+
+            print("PARENT NODE: {}".format(prev_node))
+            print("SUCCESSOR NODE: {}".format(next_node))
+            print("PATH: {}".format(path))
+
+            if next_node in arbit_path:
+                edge = self.graph[prev_node][next_node]
+                print("EDGE: {}".format(edge))
+                edge = 10**(-1*edge)
+                print("CONVERSION FROM {} to {}: {}".format(prev_node, next_node, edge))
+                arbit_loop.append(prev_node)
+                arbit_path[prev_node] = edge
+
+                arbit_loop.append(next_node)
+                return arbit_loop
+            else:
+                edge = self.graph[prev_node][next_node]
+                edge = 10**(-1*edge)
+                print(
+                    "CONVERSION FROM {} to {}: {}".format(prev_node, next_node,
+                                                          edge))
+                arbit_path[prev_node] = edge
+                arbit_loop.append(prev_node)
+
+
+
+            """
+            if next_node not in path:
                 arbitrageLoop.append(next_node)
+                # add exhange rates to the path
+                edge = self.graph[prev_node][next_node]
+                arbit_path[prev_node] = edge
             else:
                 arbitrageLoop.append(next_node)
                 arbitrageLoop = arbitrageLoop[arbitrageLoop.index(next_node):]
-                return arbitrageLoop        
-        """
 
+                edge = self.graph[prev_node][next_node]
+                arbit_path[next_node] = edge
 
-
-
-
-class Edge(object):
-    def __init__(self, start, destination, weight):
-        self.fromNode = start
-        self.toNode = destination
-        self.edgeWeight = weight
-    def __str__(self):
-        print("Start: {}, Destination: {}, Weight {}"
-              .format(self.fromNode,self.toNode,self.edgeWeight))
-
-        """
-        distance ={}
-        for currency in self.vertices:
-            # dictionary of size V, track best distance to each node from start node
-            distance = {currency: 0}
-
-            for currencyPair, edge in self.graph[currency].items():
-                # Set distance for currency to each currency pair to infinity
-                distance[currencyPair] = float('inf')
-                # distance to self is 0, we are starting from some currency
-
-
-            print("DISTANCES from {} : {}".format(currency, distance))
-
-            for currencyPair, edge in self.graph[currency].items():
-                # Relax each edge
-                # Check the current distance + edge cost and compare it to the
-                # current edge cost from starting node
-                if distance[currency] + edge < distance[currencyPair]:
-                    # if edge cost to node is less than what was saved previously
-                    # update the value.
-                    distance[currencyPair] = distance[currency] + edge
-
-            print("AFTER EDGES RELAXED")
-            print("DISTANCES from {} : {}".format(currency, distance))
-
-        for currency in self.vertices:
-
-            # DETECT NEGATIVE CYCLE
-            for currencyPair, edge in self.graph[currency].items():
-                # Relax each edge
-                # Check the current distance + edge cost and compare it to the
-                # current edge cost from starting node
-                print("CURRENT DISTANCE: {}".format(distance[currencyPair]))
-                print("NEW DISTANCE: {}".format(edge))
-                if distance[currency] + edge < distance[currencyPair]:
-                    # if edge cost to node is less than what was saved previously
-                    # update the value.
-                    distance[currencyPair] = distance[currency] + edge
-                    print("ARBITRAGE DETECTED")
-        """
+                print("ArbitrageLoop: {}".format(arbitrageLoop))
+                return arbit_path
+            """
