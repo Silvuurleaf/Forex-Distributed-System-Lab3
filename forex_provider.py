@@ -55,7 +55,7 @@ class TestPublisher(object):
             quotes.append(quote)
 
         # occasionally put in some older timestamps to simulate out-of-order UDP messages
-        if random.random() < 0.10: # 10% of the time
+        if random.random() < 0.99: # 10% of the time
             print('sending an out of order message')
             ts -= timedelta(seconds=random.gauss(10, 3), microseconds=random.gauss(200, 10))
             for quote in quotes:
@@ -65,7 +65,7 @@ class TestPublisher(object):
         quotes = random.sample(quotes, k=len(quotes) - random.choice((0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3)))
 
         # occasionally put in an arbitrage
-        if random.random() < 0.99:  # 99% of the time
+        if random.random() < 0.05:  # 5% of the time
             xxx, yyy = sorted(random.sample(list(self.reference), 2))
             xxx_per_usd = self.reference[xxx] if xxx not in REVERSE_QUOTED else 1/self.reference[xxx]
             yyy_per_usd = self.reference[yyy] if yyy not in REVERSE_QUOTED else 1/self.reference[yyy]

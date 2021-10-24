@@ -130,40 +130,43 @@ class subscriber(object):
 
         print("SOURCE NODE: {}".format(startnode))
         print("ARBITRAGE PATH PREPROCESS: {}".format(path))
+        try:
+            # KEY = SUCCESSOR
+            # VALUE = PARENT
+            START = startnode
+            parentNode = path[START]
+            arbitragePath = []
+            while startnode != parentNode:
+                arbitragePath.append(parentNode)
+                parentNode = path[parentNode]
 
-        # KEY = SUCCESSOR
-        # VALUE = PARENT
-        START = startnode
-        parentNode = path[START]
-        arbitragePath = []
-        while startnode != parentNode:
-            arbitragePath.append(parentNode)
-            parentNode = path[parentNode]
 
+            print("ARBITRAGE PATH: {}".format(arbitragePath))
 
-        print("ARBITRAGE PATH: {}".format(arbitragePath))
+            arbitragePath.append(START)
+            arbitragePath.reverse()
+            arbitragePath.append(START)
+            print("ARBITRAGE PATH: {}".format(arbitragePath))
 
-        arbitragePath.append(START)
-        arbitragePath.reverse()
-        arbitragePath.append(START)
-        print("ARBITRAGE PATH: {}".format(arbitragePath))
+            accumulated = INITIAL_INVESTMENT
+            for i in range(len(arbitragePath)):
 
-        accumulated = INITIAL_INVESTMENT
-        for i in range(len(arbitragePath)):
+                if i+1 != len(arbitragePath):
+                    parentToken = arbitragePath[i]
+                    successorToken = arbitragePath[i+1]
 
-            if i+1 != len(arbitragePath):
-                parentToken = arbitragePath[i]
-                successorToken = arbitragePath[i+1]
-
-                edge = self.coinbase.graph[parentToken][successorToken]
-                rate = 10 ** (-1 * edge)
-                totalPast = accumulated
-                accumulated = accumulated * rate
-                print("{} of {} exchanged to {} at rate: {} = {}".format(
-                    totalPast,
-                    parentToken, successorToken,
-                    rate,
-                    accumulated))
+                    edge = self.coinbase.graph[parentToken][successorToken]
+                    rate = 10 ** (-1 * edge)
+                    totalPast = accumulated
+                    accumulated = accumulated * rate
+                    print("{} of {} exchanged to {} at rate: {} = {}".format(
+                        totalPast,
+                        parentToken, successorToken,
+                        rate,
+                        accumulated))
+        except Exception as e:
+            print(e)
+            print("Arbitrage source node keyerror")
 
 
     def add_nodes_toGraph(self, node, neighbor, exchangeRate):

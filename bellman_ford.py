@@ -73,4 +73,4 @@ class Graph(object):
             destination[neighbor] = destination[token] + edge
 
             predecessors[neighbor] = token
-            # predecessors[token] = neighbor #FIXME
+
