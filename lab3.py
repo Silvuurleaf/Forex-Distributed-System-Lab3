@@ -1,7 +1,7 @@
 import socket
 import time
 import sys
-import datetime
+from datetime import datetime
 import pickle
 import ipaddress
 import struct
@@ -38,6 +38,7 @@ Distributed Systems
 # Stores all bash arguments from cmd line, excluding python file name
 
 MSG_LENGTH = 32
+INITIAL_INVESTMENT = 100
 
 
 class subscriber(object):
@@ -47,7 +48,7 @@ class subscriber(object):
         self.hostport = port
         print("HOST: {}".format(self.hostname))
         self.coinbase = bellman_ford.Graph()
-        self.currentTime = 0
+        self.time = datetime.now()
 
     def sendMsg(self):
         """
@@ -89,11 +90,10 @@ class subscriber(object):
 
                         # number of ms passed since 00:00:00 UTC
                         timestamp = fxp.getMs(data[0:8])
-                        print("TimeStamp: {}".format(timestamp))
 
-                        if timestamp >= self.currentTime:
+                        if timestamp >= self.time:
 
-                            self.currentTime = timestamp
+                            self.time = timestamp
 
                             # get currency pair
                             currency = fxp.getCurrency(data[8:14])
@@ -101,56 +101,69 @@ class subscriber(object):
                             node = currency[0:3]
                             neighbor = currency[3:6]
 
-                            print("Currency: {}".format(currency))
+                            exchRate = fxp.getExchangeRate(data[14:22])
+                            print("{}: {} to {}: {}".
+                                      format(timestamp, node, neighbor, exchRate))
 
-                            try:
-                                exchRate = fxp.getExchangeRate(data[14:22])
-                                print("Exchange Rate from {} to {} is: {}".
-                                      format(node, neighbor, exchRate))
-
-                            except Exception as e:
-                                print(e)
-                                print(len(data[14:22]))
                             # struct.error: unpack requires a buffer of 8 bytes
-                            reserved = fxp.getReserved(data[22:32])
-                            print("reserved: {}".format(reserved))
+                            # reserved = fxp.getReserved(data[22:32])
 
-                            edgeWeight = exchRate
-                            print("EXCHANGE RATE {}".format(exchRate))
-
-                            self.add_nodes_toGraph(node, neighbor, edgeWeight)
+                            self.add_nodes_toGraph(node, neighbor, exchRate)
 
                         else:
                             print("STALE QUOTE!")
 
-                    print("-----------------NEW QUOTE PACKET----------------")
+                    print("\n-----------------NEW QUOTE PACKET----------------")
                 except Exception as e:
                     print(e)
                     # connection was lost re-establish connection
                     self.sendMsg()
+
                 currency = self.coinbase.vertices[0]
                 arbitragePath = self.coinbase.bellman_ford(currency)
 
                 if arbitragePath:
-                    print("Start node {}".format(currency))
-                    print("Distances: {}".format(arbitragePath))
-                    self.proccessPath(arbitragePath)
-
-    def proccessPath(self, path):
-
-        print("ARBITRAGE PATH {}".format(path))
-        print("Starting with 100 {}".format( next(iter(path)) ))
-        accumulated = 100
+                    self.proccessPath(arbitragePath, currency)
 
 
+    def proccessPath(self, path, startnode):
 
-        """
-        for token, exchangeRate in path.items():
-            rate = exchangeRate
-            totalPast = accumulated
-            accumulated = accumulated*rate
-            print("With {} of {} X {} = {}".format(totalPast, token, rate, accumulated))
-        """
+        print("SOURCE NODE: {}".format(startnode))
+        print("ARBITRAGE PATH PREPROCESS: {}".format(path))
+
+        # KEY = SUCCESSOR
+        # VALUE = PARENT
+        START = startnode
+        parentNode = path[START]
+        arbitragePath = []
+        while startnode != parentNode:
+            arbitragePath.append(parentNode)
+            parentNode = path[parentNode]
+
+
+        print("ARBITRAGE PATH: {}".format(arbitragePath))
+
+        arbitragePath.append(START)
+        arbitragePath.reverse()
+        arbitragePath.append(START)
+        print("ARBITRAGE PATH: {}".format(arbitragePath))
+
+        accumulated = INITIAL_INVESTMENT
+        for i in range(len(arbitragePath)):
+
+            if i+1 != len(arbitragePath):
+                parentToken = arbitragePath[i]
+                successorToken = arbitragePath[i+1]
+
+                edge = self.coinbase.graph[parentToken][successorToken]
+                rate = 10 ** (-1 * edge)
+                totalPast = accumulated
+                accumulated = accumulated * rate
+                print("{} of {} exchanged to {} at rate: {} = {}".format(
+                    totalPast,
+                    parentToken, successorToken,
+                    rate,
+                    accumulated))
 
 
     def add_nodes_toGraph(self, node, neighbor, exchangeRate):
