@@ -111,7 +111,7 @@ class subscriber(object):
                             self.add_nodes_toGraph(node, neighbor, exchRate)
 
                         else:
-                            print("STALE QUOTE!")
+                            print("--------STALE QUOTE!-------------------")
 
                     print("\n-----------------NEW QUOTE PACKET----------------")
                 except Exception as e:
@@ -119,7 +119,8 @@ class subscriber(object):
                     # connection was lost re-establish connection
                     self.sendMsg()
 
-                currency = self.coinbase.vertices[0]
+                #currency = self.coinbase.vertices[0]
+                currency = 'USD'
                 arbitragePath = self.coinbase.bellman_ford(currency)
 
                 if arbitragePath:
