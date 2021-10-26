@@ -108,7 +108,8 @@ class subscriber(object):
                             # struct.error: unpack requires a buffer of 8 bytes
                             # reserved = fxp.getReserved(data[22:32])
 
-                            self.add_nodes_toGraph(node, neighbor, exchRate)
+                            self.add_nodes_toGraph(node, neighbor,
+                                                   exchRate, timestamp)
 
                         else:
                             print("--------STALE QUOTE!-------------------")
@@ -156,7 +157,7 @@ class subscriber(object):
                     parentToken = arbitragePath[i]
                     successorToken = arbitragePath[i+1]
 
-                    edge = self.coinbase.graph[parentToken][successorToken]
+                    edge = self.coinbase.graph[parentToken][successorToken][0]
                     rate = 10 ** (-1 * edge)
                     totalPast = accumulated
                     accumulated = accumulated * rate
@@ -170,9 +171,9 @@ class subscriber(object):
             print("Arbitrage source node keyerror")
 
 
-    def add_nodes_toGraph(self, node, neighbor, exchangeRate):
+    def add_nodes_toGraph(self, node, neighbor, exchangeRate, timestamp):
         self.coinbase.add_node(node)
-        self.coinbase.add_edge(node, neighbor, exchangeRate)
+        self.coinbase.add_edge(node, neighbor, exchangeRate, timestamp)
 
     @staticmethod
     def split(a, n):
