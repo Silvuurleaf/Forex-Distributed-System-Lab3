@@ -133,6 +133,24 @@ class Graph(object):
 
 
     def relaxEdge(self, token, neighbor, edge, destination, predecessors):
+        """
+        Each edge is checked against the destination dictionary which holds the
+        distance between each node and every other node in the graph.
+
+        If the new distance to a node is less than what was previously recorded
+        update the destination dictionary to reflect the new edge.
+
+        Additionally, path is updated in the predecessor dictionary when an edge is
+        relaxed.
+
+        :param token: (string) Current token we are measuring FROM (relative to)
+        :param neighbor: (string) currency neighbor to token we are measure
+            from.
+        :param edge: (double) the edge weight or distance between two nodes
+        :param destination: (dictionary) store distances from nodes to its neighbors
+        :param predecessors: (dictionary) store path of arbitrage
+        :return:
+        """
         # If the distance between the node and the neighbour is lower than the one I have now
         if (destination[neighbor] > destination[token] + edge + TOLERANCE) &\
                 (destination[neighbor] > destination[token] + edge - TOLERANCE):
