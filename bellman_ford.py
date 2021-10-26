@@ -1,4 +1,6 @@
+from datetime import datetime
 import math
+
 TOLERANCE = 0.01
 """
 Mark Taylor
@@ -10,6 +12,7 @@ Negative cycles will indicate an inefficient market and arbitrage
 opportunity.
 
 """
+
 
 class Graph(object):
 
@@ -29,7 +32,6 @@ class Graph(object):
         # and their conversion rates.
         self.graph = {}
 
-
     def add_node(self, node):
         """
         Adds a node into the graph
@@ -44,7 +46,7 @@ class Graph(object):
         else:
             pass
 
-    def add_edge(self, node, neighbor, weight):
+    def add_edge(self, node, neighbor, weight, timestamp):
         """
         Add an edge, which acts as a the conversion rate
         between two currencies. Physically in our graph it
@@ -53,17 +55,20 @@ class Graph(object):
         :param node: (String) Currency that the weight is coming from
         :param neighbor: (String) Currency that the weight is directed at
         :param weight: (Double) Exchange rate between two currencies
+        :param timestamp: (UTC) When the quote was added to graph
         """
 
         # Assign value as a negative logarithm for Bellman Ford
         # to find a negative cycle
-        self.graph[node][neighbor] = -math.log10(weight)
+        #self.graph[node][neighbor] = -math.log10(weight)
+        self.graph[node][neighbor] = [-math.log10(weight), timestamp]
 
         # Add neighbor node to graph
         self.add_node(neighbor)
 
         # Inverse conversion rate from neighbor going back
-        self.graph[neighbor][node] = -math.log10(1/weight)
+        #self.graph[neighbor][node] = -math.log10(1 / weight)
+        self.graph[neighbor][node] = [-math.log10(1 / weight), timestamp]
 
     def destination_predecessors(self, start_node):
         """
@@ -78,7 +83,7 @@ class Graph(object):
                 cycle (arbitrage opportunity)
         """
         destination = {}  # stores distances from start node
-        path = {}         # store path for an arbitrage
+        path = {}  # store path for an arbitrage
 
         # add currency nodes to destination/predecessor dictionaries
         for node in self.graph:
@@ -107,6 +112,9 @@ class Graph(object):
             cycle.
         """
 
+        # might cause a fat error
+        self.checkStale()
+
         # get destination & path dictionaries
         destination, path = self.destination_predecessors(startNode)
 
@@ -121,16 +129,15 @@ class Graph(object):
                     # print("Neighbors to token {}: {}".format(token, self.graph[token]))
 
                     # relax (update) edge values
-                    self.relaxEdge(token, neighbor_token, edge, destination,
-                                       path)
+                    self.relaxEdge(token, neighbor_token, edge[0], destination,
+                                   path)
             # print("Destinations: {}".format(destination))
 
         # Second iteration checks if any of the edge values have been updated.
         for token in self.vertices:
             for neighbor_token, edge in self.graph[token].items():
-                if destination[neighbor_token] < destination[token] + edge:
+                if destination[neighbor_token] < destination[token] + edge[0]:
                     return path
-
 
     def relaxEdge(self, token, neighbor, edge, destination, predecessors):
         """
@@ -152,10 +159,20 @@ class Graph(object):
         :return:
         """
         # If the distance between the node and the neighbour is lower than the one I have now
-        if (destination[neighbor] > destination[token] + edge + TOLERANCE) &\
+        if (destination[neighbor] > destination[token] + edge + TOLERANCE) & \
                 (destination[neighbor] > destination[token] + edge - TOLERANCE):
             # Record this lower distance
             destination[neighbor] = destination[token] + edge
 
             predecessors[neighbor] = token
+
+
+    def checkStale(self):
+
+        for token in self.graph:
+            for neighbor, values in self.graph[token].items():
+                if datetime.now() - values[1] > 1.5:
+                    print("Quote is too old")
+                    self.graph[token][neighbor] = [None, 0]
+                    self.graph[neighbor][token] = [None, 0]
 
