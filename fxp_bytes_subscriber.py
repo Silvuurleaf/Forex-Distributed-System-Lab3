@@ -3,20 +3,18 @@ Unmarshalling for subscriber
 
 """
 import struct
-from array import array
-from datetime import datetime
+from datetime import datetime, timezone
 
+MICROS_PER_SECOND = 1_000_000
 
 def getMs(data: bytes):
 
-    arr = array('d')
-    arr.frombytes(data)
-    arr.byteswap()
-    timediff = datetime.now() - datetime.fromtimestamp(arr[0])
+    microSeconds = int.from_bytes(data, "big")
 
-    return datetime.fromtimestamp(timediff.total_seconds())
+    timeSeconds = microSeconds / MICROS_PER_SECOND
+    timeIn = datetime.fromtimestamp(timeSeconds, tz=timezone.utc)
 
-    #return int.from_bytes(data, byteorder='big', signed=False)
+    return timeIn
 
 
 def getExchangeRate(data: bytes):

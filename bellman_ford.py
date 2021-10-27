@@ -60,14 +60,12 @@ class Graph(object):
 
         # Assign value as a negative logarithm for Bellman Ford
         # to find a negative cycle
-        #self.graph[node][neighbor] = -math.log10(weight)
         self.graph[node][neighbor] = [-math.log10(weight), timestamp]
 
         # Add neighbor node to graph
         self.add_node(neighbor)
 
         # Inverse conversion rate from neighbor going back
-        #self.graph[neighbor][node] = -math.log10(1 / weight)
         self.graph[neighbor][node] = [-math.log10(1 / weight), timestamp]
 
     def destination_predecessors(self, start_node):
@@ -111,9 +109,6 @@ class Graph(object):
         :return: Dictionary representing path taken for arbitrage
             cycle.
         """
-
-        # might cause a fat error
-        self.checkStale()
 
         # get destination & path dictionaries
         destination, path = self.destination_predecessors(startNode)
@@ -167,12 +162,26 @@ class Graph(object):
             predecessors[neighbor] = token
 
 
-    def checkStale(self):
+    def checkStale(self, utcNow):
 
+
+        # edges
+        stale_edge = []
         for token in self.graph:
             for neighbor, values in self.graph[token].items():
-                if datetime.now() - values[1] > 1.5:
-                    print("Quote is too old")
-                    self.graph[token][neighbor] = [None, 0]
-                    self.graph[neighbor][token] = [None, 0]
+                if utcNow.timestamp() - values[1] > 1.5:
+                    stale_edge.append([token, neighbor])
+
+        stale_List = []
+        for i in stale_edge:
+            fromToken = i[0]
+            toToken = i[1]
+
+            stale_List.append("STALE QUOTE: " +
+                              fromToken + "-" + toToken)
+
+            del self.graph[fromToken][toToken]
+            # del self.graph[neighbor][token]
+
+        return stale_List
 
