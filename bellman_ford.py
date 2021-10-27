@@ -1,7 +1,7 @@
 from datetime import datetime
 import math
 
-TOLERANCE = 0.01
+TOLERANCE = 0.0000001
 """
 Mark Taylor
 
@@ -134,6 +134,8 @@ class Graph(object):
                 if destination[neighbor_token] < destination[token] + edge[0]:
                     return path
 
+        return None
+
     def relaxEdge(self, token, neighbor, edge, destination, predecessors):
         """
         Each edge is checked against the destination dictionary which holds the
@@ -163,16 +165,25 @@ class Graph(object):
 
 
     def checkStale(self, utcNow):
+        """
+        check for stale messages that have been in the graph
+        for longer than 1.5 seconds. If they are stale remove them from
+        the graph.
+        :param utcNow: UTC time in seconds
+        :return: list of strings detailing which nodes were removed.
+        """
 
-
-        # edges
         stale_edge = []
+        # loop through every token and their edges and check to
+        # see how long they have been in the graph
         for token in self.graph:
             for neighbor, values in self.graph[token].items():
                 if utcNow.timestamp() - values[1] > 1.5:
                     stale_edge.append([token, neighbor])
 
         stale_List = []
+
+        # iterate over the list and remove that edge
         for i in stale_edge:
             fromToken = i[0]
             toToken = i[1]
@@ -181,7 +192,6 @@ class Graph(object):
                               fromToken + "-" + toToken)
 
             del self.graph[fromToken][toToken]
-            # del self.graph[neighbor][token]
 
         return stale_List
 
